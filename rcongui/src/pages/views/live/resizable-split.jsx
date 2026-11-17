@@ -20,12 +20,13 @@ export default function ResizableSplit({
   left,
   right,
   enabled,
-  size,
+  size: rawSize,
   onSizeChange,
   defaultSize,
   min = 20,
   max = 80,
 }) {
+  const size = clamp(Number(rawSize) || defaultSize, min, max);
   const containerRef = useRef(null);
   const dragSizeRef = useRef(null);
 
@@ -70,72 +71,89 @@ export default function ResizableSplit({
     onSizeChange(clamp(next, min, max));
   };
 
-  if (!enabled) {
-    return (
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
-        {left && <Box sx={{ minWidth: 0, overflow: "hidden" }}>{left}</Box>}
-        {right && <Box sx={{ minWidth: 0, overflow: "hidden" }}>{right}</Box>}
-      </Box>
-    );
-  }
-
+  // Always render the same element tree (keyed panels, only styles change)
+  // so toggling the split, e.g. hiding a panel or resizing the window,
+  // does not remount the panels and reset their local state.
   return (
     <Box
       ref={containerRef}
       style={{ "--split-size": `${size}%` }}
-      sx={{ display: "flex", flexDirection: "row", width: "100%", minWidth: 0 }}
+      sx={{
+        display: "flex",
+        flexDirection: enabled ? "row" : "column",
+        gap: enabled ? 0 : 1,
+        width: "100%",
+        minWidth: 0,
+      }}
     >
-      <Box
-        sx={{
-          flex: `0 0 calc(var(--split-size) - ${HANDLE_WIDTH / 2}px)`,
-          minWidth: 0,
-          overflow: "hidden",
-        }}
-      >
-        {left}
-      </Box>
-      <Box
-        role="separator"
-        aria-orientation="vertical"
-        aria-label="Resize players and logs panels"
-        aria-valuenow={Math.round(size)}
-        aria-valuemin={min}
-        aria-valuemax={max}
-        tabIndex={0}
-        title="Drag to resize, double-click to reset"
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-        onDoubleClick={() => onSizeChange(defaultSize)}
-        onKeyDown={handleKeyDown}
-        sx={{
-          flex: `0 0 ${HANDLE_WIDTH}px`,
-          cursor: "col-resize",
-          touchAction: "none",
-          position: "relative",
-          outline: "none",
-          "&::after": {
-            content: '""',
-            position: "absolute",
-            top: 0,
-            bottom: 0,
-            left: "50%",
-            width: "2px",
-            transform: "translateX(-50%)",
-            bgcolor: "divider",
-            opacity: 0,
-            transition: "opacity 150ms",
-          },
-          "&:hover::after, &:focus-visible::after, &:active::after": {
-            opacity: 1,
-            bgcolor: "primary.main",
-          },
-        }}
-      />
-      <Box sx={{ flex: "1 1 0", minWidth: 0, overflow: "hidden" }}>
-        {right}
-      </Box>
+      {left && (
+        <Box
+          key="left"
+          sx={{
+            flex: enabled
+              ? `0 0 calc(var(--split-size) - ${HANDLE_WIDTH / 2}px)`
+              : "0 0 auto",
+            minWidth: 0,
+            overflow: "hidden",
+          }}
+        >
+          {left}
+        </Box>
+      )}
+      {enabled && (
+        <Box
+          key="handle"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize players and logs panels"
+          aria-valuenow={Math.round(size)}
+          aria-valuemin={min}
+          aria-valuemax={max}
+          tabIndex={0}
+          title="Drag to resize, double-click to reset"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          onDoubleClick={() => onSizeChange(defaultSize)}
+          onKeyDown={handleKeyDown}
+          sx={{
+            flex: `0 0 ${HANDLE_WIDTH}px`,
+            cursor: "col-resize",
+            touchAction: "none",
+            position: "relative",
+            outline: "none",
+            "&::after": {
+              content: '""',
+              position: "absolute",
+              top: 0,
+              bottom: 0,
+              left: "50%",
+              width: "2px",
+              transform: "translateX(-50%)",
+              bgcolor: "divider",
+              opacity: 0,
+              transition: "opacity 150ms",
+            },
+            "&:hover::after, &:focus-visible::after, &:active::after": {
+              opacity: 1,
+              bgcolor: "primary.main",
+            },
+          }}
+        />
+      )}
+      {right && (
+        <Box
+          key="right"
+          sx={{
+            flex: enabled ? "1 1 0" : "0 0 auto",
+            minWidth: 0,
+            overflow: "hidden",
+          }}
+        >
+          {right}
+        </Box>
+      )}
     </Box>
   );
 }
