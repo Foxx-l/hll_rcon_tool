@@ -182,3 +182,18 @@ export const useLiveSessionsTableStore = create(
     }
   )
 );
+
+// Live view layout store
+export const LIVE_VIEW_DEFAULT_PLAYERS_WIDTH = (7 / 12) * 100;
+
+export const useLiveViewLayoutStore = create(
+  persist(
+    (set) => ({
+      playersWidth: LIVE_VIEW_DEFAULT_PLAYERS_WIDTH,
+      setPlayersWidth: (playersWidth) => set({ playersWidth }),
+    }),
+    {
+      name: withPrefix("live-view-layout"),
+    }
+  )
+);

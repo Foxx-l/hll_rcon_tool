@@ -12,7 +12,10 @@ import {
   useLogsSearchStore,
   usePlayersTableStore,
   useLogsTableStore,
+  useLiveViewLayoutStore,
+  LIVE_VIEW_DEFAULT_PLAYERS_WIDTH,
 } from "@/stores/table-config";
+import ResizableSplit from "./resizable-split";
 import { teamsLiveQueryOptions } from "@/queries/teams-live-query";
 import { normalizePlayerProfile } from "@/utils/lib";
 import {
@@ -30,6 +33,7 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Tooltip,
+  useMediaQuery,
 } from "@mui/material";
 import TableChartIcon from "@mui/icons-material/TableChart";
 import ScoreboardIcon from "@mui/icons-material/Scoreboard";
@@ -255,6 +259,15 @@ const Live = () => {
     setGlobalFilter([value]);
   };
 
+  // ---------------- PLAYERS / LOGS SPLIT -----------------
+  const isLargeScreen = useMediaQuery((theme) => theme.breakpoints.up("lg"));
+  const playersWidth = useLiveViewLayoutStore((state) => state.playersWidth);
+  const setPlayersWidth = useLiveViewLayoutStore(
+    (state) => state.setPlayersWidth
+  );
+  const showPlayers = visibleElements.includes("players");
+  const showLogs = visibleElements.includes("logs");
+
   return (
     <Grid container spacing={1} sx={{ width: "100%", minWidth: 0 }}>
       <Grid size={12} sx={{ bgcolor: "background.paper" }}>
@@ -344,50 +357,38 @@ const Live = () => {
         </Grid>
       )}
 
-      {visibleElements.includes("players") && (
-        <Grid
-          size={{
-            xs: 12,
-            lg: !visibleElements.includes("logs") ? "grow" : "auto",
-          }}
-          sx={{
-            minWidth: 0,
-            overflow: "hidden",
-            maxWidth: visibleElements.includes("logs")
-              ? { lg: "calc((100% - 8px) * 7 / 12)" }
-              : undefined,
-          }}
-        >
-          <PlayersTable
-            table={playersTable}
-            teamData={teamData}
-            selectedPlayers={selectedPlayers}
-            onColumnVisibilityChange={handlePlayersColumnVisibilityChange}
-            isFetching={isTeamFetching}
-          />
-        </Grid>
-      )}
-
-      {visibleElements.includes("logs") && (
-        <Grid
-          size={{
-            xs: 12,
-            lg: "grow",
-          }}
-          sx={{
-            minWidth: visibleElements.includes("players")
-              ? { xs: 0, lg: "calc((100% - 8px) * 5 / 12)" }
-              : 0,
-            overflow: "hidden",
-          }}
-        >
-          <LogsTable
-            table={logsTable}
-            logsViewData={logsView}
-            searchParams={logsSearchParams}
-            setSearchParams={setSearchParams}
-            onColumnVisibilityChange={handleLogsColumnVisibilityChange}
-            isFetching={isLogsFetching}
+      {(showPlayers || showLogs) && (
+        <Grid size={12} sx={{ minWidth: 0 }}>
+          <ResizableSplit
+            enabled={isLargeScreen && showPlayers && showLogs}
+            size={playersWidth}
+            onSizeChange={setPlayersWidth}
+            defaultSize={LIVE_VIEW_DEFAULT_PLAYERS_WIDTH}
+            left={
+              showPlayers && (
+                <PlayersTable
+                  table={playersTable}
+                  teamData={teamData}
+                  selectedPlayers={selectedPlayers}
+                  onColumnVisibilityChange={
+                    handlePlayersColumnVisibilityChange
+                  }
+                  isFetching={isTeamFetching}
+                />
+              )
+            }
+            right={
+              showLogs && (
+                <LogsTable
+                  table={logsTable}
+                  logsViewData={logsView}
+                  searchParams={logsSearchParams}
+                  setSearchParams={setSearchParams}
+                  onColumnVisibilityChange={handleLogsColumnVisibilityChange}
+                  isFetching={isLogsFetching}
+                />
+              )
+            }
           />
         </Grid>
       )}
